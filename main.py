@@ -9,11 +9,12 @@ import DDPG
 import OurDDPG
 import TD3
 import utils
+from wandb import wandb
 
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(policy, env_name, seed, eval_episodes=10):
+def eval_policy(policy, env_name, seed, eval_episodes: int = 10):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="TD3")  # Policy name (TD3, DDPG or OurDDPG)
-    parser.add_argument("--env", default="HalfCheetah-v2")  # OpenAI gym environment name
+    parser.add_argument("--env", default="HalfCheetah-v3")  # OpenAI gym environment name
     parser.add_argument("--seed", default=0, type=int)  # Sets Gym, PyTorch and Numpy seeds
     parser.add_argument(
         "--start_timesteps", default=25e3, type=int
@@ -58,21 +59,24 @@ if __name__ == "__main__":
     parser.add_argument("--noise_clip", default=0.5)  # Range to clip target policy noise
     parser.add_argument("--policy_freq", default=2, type=int)  # Frequency of delayed policy updates
     parser.add_argument("--save_model", action="store_true")  # Save model and optimizer parameters
-    parser.add_argument(
-        "--load_model", default=""
-    )  # Model load file name, "" doesn't load, "default" uses file_name
+    parser.add_argument("--load_model", default="")  # Model load wandb run_id, "" doesn't load
     args = parser.parse_args()
 
-    file_name = f"{args.policy}_{args.env}_{args.seed}"
+    wandb.init(
+        project="TD3",
+        group=f"{args.policy}_{args.env}_{args.discount}",
+        name=f"seed_{args.seed}",
+        tags=[args.policy, args.env, str(args.discount)],
+    )
+
+    wandb.config.update(args)
+
     print("---------------------------------------")
     print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
     print("---------------------------------------")
 
-    if not os.path.exists("./results"):
-        os.makedirs("./results")
-
-    if args.save_model and not os.path.exists("./models"):
-        os.makedirs("./models")
+    if args.save_model:
+        os.makedirs(os.path.join(wandb.run.dir, "models"))
 
     env = gym.make(args.env)
 
@@ -109,13 +113,16 @@ if __name__ == "__main__":
         policy = DDPG.DDPG(**kwargs)
 
     if args.load_model != "":
-        policy_file = file_name if args.load_model == "default" else args.load_model
-        policy.load(f"./models/{policy_file}")
+        api = wandb.Api()
+        run = api.run(args.load_model)
+        for file in run.files():
+            file.download()
+        policy.load(f"{run.dir}/models")
 
     replay_buffer = utils.ReplayBuffer(state_dim, action_dim)
 
     # Evaluate untrained policy
-    evaluations = [eval_policy(policy, args.env, args.seed)]
+    wandb.log({"step": 0, "eval": eval_policy(policy, args.env, args.seed)})
 
     state, done = env.reset(), False
     episode_reward = 0
@@ -162,7 +169,7 @@ if __name__ == "__main__":
 
         # Evaluate episode
         if (t + 1) % args.eval_freq == 0:
-            evaluations.append(eval_policy(policy, args.env, args.seed))
-            np.save(f"./results/{file_name}", evaluations)
+            wandb.log({"step": t, "eval": eval_policy(policy, args.env, args.seed)})
+
             if args.save_model:
-                policy.save(f"./models/{file_name}")
+                policy.save(os.path.join(wandb.run.dir, "models"))

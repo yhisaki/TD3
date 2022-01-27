@@ -1,4 +1,5 @@
 import copy
+import os
 
 import torch
 import torch.nn as nn
@@ -92,18 +93,18 @@ class DDPG(object):
         for param, target_param in zip(self.actor.parameters(), self.actor_target.parameters()):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
-    def save(self, filename):
-        torch.save(self.critic.state_dict(), filename + "_critic")
-        torch.save(self.critic_optimizer.state_dict(), filename + "_critic_optimizer")
+    def save(self, dirname):
+        torch.save(self.critic.state_dict(), os.path.join(dirname, "critic"))
+        torch.save(self.critic_optimizer.state_dict(), os.path.join(dirname, "critic_optimizer"))
 
-        torch.save(self.actor.state_dict(), filename + "_actor")
-        torch.save(self.actor_optimizer.state_dict(), filename + "_actor_optimizer")
+        torch.save(self.actor.state_dict(), os.path.join(dirname, "actor"))
+        torch.save(self.actor_optimizer.state_dict(), os.path.join(dirname, "actor_optimizer"))
 
-    def load(self, filename):
-        self.critic.load_state_dict(torch.load(filename + "_critic"))
-        self.critic_optimizer.load_state_dict(torch.load(filename + "_critic_optimizer"))
+    def load(self, dirname):
+        self.critic.load_state_dict(torch.load(os.path.join(dirname, "critic")))
+        self.critic_optimizer.load_state_dict(torch.load(os.path.join(dirname, "critic_optimizer")))
         self.critic_target = copy.deepcopy(self.critic)
 
-        self.actor.load_state_dict(torch.load(filename + "_actor"))
-        self.actor_optimizer.load_state_dict(torch.load(filename + "_actor_optimizer"))
+        self.actor.load_state_dict(torch.load(os.path.join(dirname, "actor")))
+        self.actor_optimizer.load_state_dict(torch.load(os.path.join(dirname, "actor_optimizer")))
         self.actor_target = copy.deepcopy(self.actor)
