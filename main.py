@@ -80,6 +80,8 @@ if __name__ == "__main__":
     env.seed(args.seed)
     env.action_space.seed(args.seed)
     torch.manual_seed(args.seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
     np.random.seed(args.seed)
 
     state_dim = env.observation_space.shape[0]
