@@ -93,17 +93,17 @@ class DDPG(object):
             target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
 
     def save(self, dirname):
-        torch.save(self.critic.state_dict(), os.path.join(dirname, "critic"))
-        torch.save(self.critic_optimizer.state_dict(), os.path.join(dirname, "critic_optimizer"))
+        torch.save(self.critic.state_dict(), os.path.join(dirname, "critic.pt"))
+        torch.save(self.critic_optimizer.state_dict(), os.path.join(dirname, "critic_optimizer.pt"))
 
-        torch.save(self.actor.state_dict(), os.path.join(dirname, "actor"))
-        torch.save(self.actor_optimizer.state_dict(), os.path.join(dirname, "actor_optimizer"))
+        torch.save(self.actor.state_dict(), os.path.join(dirname, "actor.pt"))
+        torch.save(self.actor_optimizer.state_dict(), os.path.join(dirname, "actor_optimizer.pt"))
 
     def load(self, dirname):
-        self.critic.load_state_dict(torch.load(os.path.join(dirname, "critic")))
-        self.critic_optimizer.load_state_dict(torch.load(os.path.join(dirname, "critic_optimizer")))
+        self.critic.load_state_dict(torch.load(os.path.join(dirname, "critic.pt")))
+        self.critic_optimizer.load_state_dict(torch.load(os.path.join(dirname, "critic_optimizer.pt")))
         self.critic_target = copy.deepcopy(self.critic)
 
-        self.actor.load_state_dict(torch.load(os.path.join(dirname, "actor")))
-        self.actor_optimizer.load_state_dict(torch.load(os.path.join(dirname, "actor_optimizer")))
+        self.actor.load_state_dict(torch.load(os.path.join(dirname, "actor.pt")))
+        self.actor_optimizer.load_state_dict(torch.load(os.path.join(dirname, "actor_optimizer.pt")))
         self.actor_target = copy.deepcopy(self.actor)
